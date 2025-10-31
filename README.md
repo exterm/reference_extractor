@@ -21,12 +21,22 @@ I am not pushing this as a next version of packwerk though due to two reasons:
 
 - Packwerk development has been at a snail's pace for the last few years as Shopify has reduced its ongoing investment to just "keeping the lights on" and I don't have the influence required to change that - I don't want to spend energy arguing, I want to push this out into the world
 - Packwerk's original architecture was based on assumptions that have long been invalidated (e.g. running as a rubocop cop) and it's difficult to remove the remnants of these decisions from its architecture
+  - another outdated assumption is that config validation is slow while the actual reference checking is fast. Nowadays both require bootup of the application, so there is actually no need for a separate `validate` command
 - Packwerk has accumulated a lot of complexity to enable less common use cases and add convenience. Those would slow down iteration towards a different paradigm.
 
 Relevant open PRs on packwerk:
 
 - [packwerk#410](https://github.com/Shopify/packwerk/pull/410) Proof of concept for removing ConstantResolver and using Zeitwerk for ConstantDiscovery
 - [packwerk#397](https://github.com/Shopify/packwerk/pull/397) Allow fetching all references for a file, or all files, using public API
+
+## Ideas
+
+- Name
+  - Lattice, keeps your ruby in shape
+  - Streckennetzplan, a roadmap for your rails architecture
+- Eliminate Rails dependency
+  - would be nice to just depend on zeitwerk, not Rails
+  - instead of reading from `Rails.autoloaders`, can we just get the autoloaders from Zeitwerk?
 
 ## Default Gem README
 

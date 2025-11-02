@@ -1,9 +1,6 @@
-# typed: true
 # frozen_string_literal: true
 
 require "zeitwerk"
-
-
 
 module RailsApplicationFixtureHelper
   include Ratchet::ApplicationFixtureHelper
@@ -31,7 +28,7 @@ module RailsApplicationFixtureHelper
   end
 
   def use_template(template)
-    super(template)
+    super
 
     Rails.stubs(:autoloaders).returns(Autoloaders.new)
 

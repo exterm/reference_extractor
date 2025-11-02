@@ -29,6 +29,12 @@ Relevant open PRs on packwerk:
 - [packwerk#410](https://github.com/Shopify/packwerk/pull/410) Proof of concept for removing ConstantResolver and using Zeitwerk for ConstantDiscovery
 - [packwerk#397](https://github.com/Shopify/packwerk/pull/397) Allow fetching all references for a file, or all files, using public API
 
+## Implemented Improvements over Packwerk
+
+- Removed dependency on `constant_resolver` by depending directly on zeitwerk for reverse lookup, thanks to @Catsuko ([packwerk#410](https://github.com/Shopify/packwerk/pull/410))
+- Replaced `better_html` with `herb` which comes with a lot less dependencies
+- remove possibly outdated encoding handling from parsers
+
 ## Ideas
 
 - Name

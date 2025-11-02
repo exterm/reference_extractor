@@ -62,7 +62,7 @@ module Ratchet
       use_template(:skeleton)
       constant = discovery.context_for(
         "Errors::SomethingWentWrong",
-        current_namespace_path: ["Sales", "SomeEntrypoint"],
+        current_namespace_path: ["Sales", "SomeEntrypoint"]
       )
       assert_equal("::Sales::Errors::SomethingWentWrong", constant.name)
       assert_equal("components/sales/app/public/sales/errors.rb", constant.location.to_s)
@@ -122,7 +122,7 @@ module Ratchet
 
       with_empty_load_paths = ConstantDiscovery.new(
         root_path: app_dir,
-        loaders:   [empty_loader]
+        loaders: [empty_loader]
       )
 
       error = assert_raises(ConstantDiscovery::Error) do
@@ -149,7 +149,7 @@ module Ratchet
 
       ConstantDiscovery.new(
         root_path: app_dir,
-        loaders:   Rails.autoloaders
+        loaders: Rails.autoloaders
       )
     end
   end

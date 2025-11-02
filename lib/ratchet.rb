@@ -13,6 +13,14 @@ module Ratchet
   # private API
   autoload :ConstantDiscovery
   autoload :ConstantContext
+  autoload :ConstNodeInspector
+  autoload :Node
+  autoload :NodeHelpers
+  autoload :ParsedConstantDefinitions
+  autoload :Parsers
+  autoload :Reference
+  autoload :ReferenceExtractor
+  autoload :UnresolvedReference
 end
 
 require "ratchet/version"

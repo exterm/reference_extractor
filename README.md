@@ -37,6 +37,9 @@ Relevant open PRs on packwerk:
 
 ## Ideas
 
+- Shortcuts
+  - for CLI command, use a CLI library instead of hand-rolling it
+    - probably, `optparse` built into the stdlib
 - Name
   - Lattice, keeps your ruby in shape
   - Streckennetzplan, a roadmap for your rails architecture

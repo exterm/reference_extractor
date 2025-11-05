@@ -61,39 +61,16 @@ module Ratchet
     end
 
     def extract_references(root_node, relative_path:)
-      extractor = AstReferenceExtractor.new(
-        # TO DO: Add association inspector
-        constant_name_inspectors: [ConstNodeInspector.new],
-        root_node:,
-        root_path:
-      )
-
-      # TO DO: Should these two steps be combined?
-      unresolved_references = collect_references(
-        root_node,
-        extractor:,
-        relative_path:
-      )
-
-      AstReferenceExtractor.get_fully_qualified_references_from(
-        unresolved_references,
-        @context_provider
-      )
+      ast_reference_extractor.extract_references(root_node, relative_path:)
     end
 
-    # TO DO: Move this recursion into the extractor
-    def collect_references(node, ancestors: [], extractor:, relative_path:)
-      reference = extractor.reference_from_node(
-        node,
-        ancestors:,
-        relative_path:
+    def ast_reference_extractor
+      @ast_reference_extractor ||= AstReferenceExtractor.new(
+        # TO DO: Add association inspector
+        constant_name_inspectors: [ConstNodeInspector.new],
+        context_provider: @context_provider,
+        root_path:
       )
-
-      child_references = NodeHelpers.each_child(node).flat_map do |child|
-        collect_references(child, ancestors: [node] + ancestors, extractor:, relative_path:)
-      end
-
-      ([reference] + child_references).compact
     end
   end
 end

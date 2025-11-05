@@ -29,15 +29,27 @@ module Ratchet
 
     def initialize(
       constant_name_inspectors:,
-      root_node:,
+      context_provider:,
       root_path:
     )
       @constant_name_inspectors = constant_name_inspectors
+      @context_provider = context_provider
       @root_path = root_path
-      @local_constant_definitions = ParsedConstantDefinitions.new(root_node: root_node)
     end
 
-    def reference_from_node(node, ancestors:, relative_path:)
+    # Extract and resolve all references from the AST in one step
+    def extract_references(root_node, relative_path:)
+      local_constant_definitions = ParsedConstantDefinitions.new(root_node: root_node)
+      unresolved_references = collect_references(
+        root_node,
+        ancestors: [],
+        relative_path: relative_path,
+        local_constant_definitions: local_constant_definitions
+      )
+      self.class.get_fully_qualified_references_from(unresolved_references, @context_provider)
+    end
+
+    def reference_from_node(node, ancestors:, relative_path:, local_constant_definitions:)
       constant_name = nil
 
       @constant_name_inspectors.each do |inspector|
@@ -51,17 +63,18 @@ module Ratchet
           constant_name,
           node:,
           ancestors:,
-          relative_path:
+          relative_path:,
+          local_constant_definitions:
         )
       end
     end
 
     private
 
-    def reference_from_constant(constant_name, node:, ancestors:, relative_path:)
+    def reference_from_constant(constant_name, node:, ancestors:, relative_path:, local_constant_definitions:)
       namespace_path = NodeHelpers.enclosing_namespace_path(node, ancestors: ancestors)
 
-      return if local_reference?(constant_name, NodeHelpers.name_location(node), namespace_path)
+      return if local_reference?(constant_name, NodeHelpers.name_location(node), namespace_path, local_constant_definitions)
 
       UnresolvedReference.new(
         constant_name:,
@@ -71,12 +84,32 @@ module Ratchet
       )
     end
 
-    def local_reference?(constant_name, name_location, namespace_path)
-      @local_constant_definitions.local_reference?(
+    def local_reference?(constant_name, name_location, namespace_path, local_constant_definitions)
+      local_constant_definitions.local_reference?(
         constant_name,
         location: name_location,
         namespace_path: namespace_path
       )
+    end
+
+    def collect_references(node, ancestors:, relative_path:, local_constant_definitions:)
+      reference = reference_from_node(
+        node,
+        ancestors:,
+        relative_path:,
+        local_constant_definitions:
+      )
+
+      child_references = NodeHelpers.each_child(node).flat_map do |child|
+        collect_references(
+          child,
+          ancestors: [node] + ancestors,
+          relative_path:,
+          local_constant_definitions:
+        )
+      end
+
+      ([reference] + child_references).compact
     end
   end
 

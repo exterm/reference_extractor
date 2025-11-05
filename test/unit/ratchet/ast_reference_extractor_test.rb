@@ -225,31 +225,14 @@ module Ratchet
 
       extractor = AstReferenceExtractor.new(
         constant_name_inspectors: constant_name_inspectors,
-        root_node: root_node,
+        context_provider: @context_provider,
         root_path: app_dir
       )
 
-      unresolved_references = find_references_in_ast(
+      extractor.extract_references(
         root_node,
-        ancestors: [],
-        extractor: extractor,
-        file_path: Pathname.new(file_path).relative_path_from(app_dir).to_s
+        relative_path: Pathname.new(file_path).relative_path_from(app_dir).to_s
       )
-
-      AstReferenceExtractor.get_fully_qualified_references_from(
-        unresolved_references,
-        @context_provider
-      )
-    end
-
-    def find_references_in_ast(root_node, ancestors:, extractor:, file_path:)
-      references = [extractor.reference_from_node(root_node, ancestors: ancestors, relative_path: file_path)]
-
-      child_references = NodeHelpers.each_child(root_node).flat_map do |child|
-        find_references_in_ast(child, ancestors: [root_node] + ancestors, extractor: extractor, file_path: file_path)
-      end
-
-      (references + child_references).compact
     end
   end
 end

@@ -2,7 +2,7 @@
 
 module Ratchet
   module ApplicationFixtureHelper
-    TEMP_FIXTURE_DIR = File.join("/tmp/ratchet-test/", "fixtures").to_s
+    TEMP_FIXTURE_DIR = File.join(ENV.fetch("RUNNER_TEMP", "/tmp"), "ratchet-test", "fixtures").to_s
     DEFAULT_TEMPLATE = :minimal
 
     def setup_application_fixture

@@ -38,7 +38,6 @@ Relevant open PRs on packwerk:
 
 ## TO DO
 
-- Ratchet::Extractor#references_from_file should ignore references to the same file (e.g. `class A; end` in `a.rb` should not yield a reference)
 - add association inspector from Packwerk
 - rename the whole thing to ReferenceExtractor / reference_extractor
 

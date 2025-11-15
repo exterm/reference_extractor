@@ -103,5 +103,22 @@ module Ratchet
       assert_equal 1, references.count
       assert_equal "::Order", references.first.constant.name
     end
+
+    test "references_from_file ignores references to the same file" do
+      file_path = "components/sales/app/models/order.rb"
+      file_content = <<~RUBY
+        class Order
+          def self_reference
+            Order
+          end
+        end
+      RUBY
+
+      write_app_file(file_path, file_content)
+
+      references = @extractor.references_from_file(file_path)
+
+      assert_empty references
+    end
   end
 end

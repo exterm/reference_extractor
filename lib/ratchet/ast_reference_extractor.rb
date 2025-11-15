@@ -16,6 +16,9 @@ module Ratchet
 
           next if constant.nil?
 
+          # Ignore references that resolve to the same file they originate from.
+          next if constant.location.to_s == unresolved_reference.relative_path.to_s
+
           fully_qualified_references << Reference.new(
             relative_path: unresolved_reference.relative_path,
             constant: constant,

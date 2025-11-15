@@ -64,6 +64,15 @@ module Ratchet
       assert_equal "::Sales::Order", references.first.constant.name
     end
 
+    test "ignores references to constants defined in the same file" do
+      references = process(
+        "class Order; def self_reference; Order; end; end",
+        "components/sales/app/models/order.rb"
+      )
+
+      assert_empty references
+    end
+
     test "handles bare constants, as present in .erb files" do
       references = process(
         "Order",

@@ -1,10 +1,10 @@
-# 🚧 [WIP] Ratchet [WIP] 🚧
+# 🚧 [WIP] ReferenceExtractor [WIP] 🚧
 
 ## Initial Implementation Plan
 
 Looking back at years of building and using [packwerk](https://github.com/Shopify/packwerk), there are some major things I would like to improve in the next version.
 
-Properties I want from ratchet:
+Properties I want from ReferenceExtractor:
 
 - extract the most complex, least specific part into a reusable module. That is, finding all external references from a Ruby file
 - enabled by the above, allow arbitrary (through extension) rules to be expressed over that foundational reference graph
@@ -13,7 +13,7 @@ Properties I want from ratchet:
   - make sure it uses a current version of prism in the canonical way for parsing
   - remove the dependency on zeitwerk _or_ go all in on zeitwerk and remove constant_resolver
 
-There is a possible version of this where ratchet-core is a separate gem.
+There is a possible version of this where reference_extractor-core is a separate gem.
 
 Also, please note that all names are temporary at this point.
 
@@ -60,7 +60,7 @@ Relevant open PRs on packwerk:
 
 TODO: Delete this and the text below, and describe your gem
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/ratchet`. To experiment with that code, run `bin/console` for an interactive prompt.
+Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/reference_extractor`. To experiment with that code, run `bin/console` for an interactive prompt.
 
 ## Installation
 
@@ -90,7 +90,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/exterm/ratchet. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/exterm/ratchet/blob/main/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome on GitHub at https://github.com/exterm/reference_extractor. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/exterm/reference_extractor/blob/main/CODE_OF_CONDUCT.md).
 
 ## License
 
@@ -98,4 +98,4 @@ The gem is available as open source under the terms of the [MIT License](https:/
 
 ## Code of Conduct
 
-Everyone interacting in the Ratchet project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/exterm/ratchet/blob/main/CODE_OF_CONDUCT.md).
+Everyone interacting in the ReferenceExtractor project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/exterm/reference_extractor/blob/main/CODE_OF_CONDUCT.md).

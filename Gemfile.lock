@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ratchet (0.1.0)
+    reference_extractor (0.1.0)
       activesupport
       herb
       parser
@@ -121,7 +121,7 @@ DEPENDENCIES
   minitest
   mocha
   rake
-  ratchet!
+  reference_extractor!
   standard
 
 BUNDLED WITH

@@ -3,7 +3,7 @@
 require "zeitwerk"
 
 module RailsApplicationFixtureHelper
-  include Ratchet::ApplicationFixtureHelper
+  include ReferenceExtractor::ApplicationFixtureHelper
 
   module Rails; end
 

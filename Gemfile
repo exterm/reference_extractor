@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in ratchet.gemspec
+# Specify your gem's dependencies in reference_extractor.gemspec
 gemspec
 
 gem "irb"

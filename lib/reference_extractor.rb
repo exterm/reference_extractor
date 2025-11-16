@@ -22,18 +22,16 @@ module ReferenceExtractor
 
   # public API
   autoload :Extractor
+  autoload :ParseError
+  autoload :Reference
 
   # private API
-  autoload :AstReferenceExtractor
-  autoload :ConstantDiscovery
+  autoload :Internal
+
   autoload :ConstantContext
-  autoload :ConstNodeInspector
-  autoload :Node
-  autoload :NodeHelpers
-  autoload :ParsedConstantDefinitions
-  autoload :Parsers
-  autoload :Reference
   autoload :UnresolvedReference
+
+  private_constant :Internal
 end
 
 require "reference_extractor/version"

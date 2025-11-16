@@ -4,7 +4,7 @@ module ReferenceExtractor
   module ParserTestHelper
     class << self
       def parse(source)
-        Parsers::Ruby.new.call(io: StringIO.new(source))
+        Internal::Parsers::Ruby.new.call(io: StringIO.new(source))
       end
     end
   end

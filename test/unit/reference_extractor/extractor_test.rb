@@ -36,7 +36,7 @@ module ReferenceExtractor
     test "references_from_string handles invalid syntax gracefully" do
       snippet = "def broken syntax"
 
-      assert_raises(Parsers::ParseError) do
+      assert_raises(ParseError) do
         @extractor.references_from_string(snippet)
       end
     end
@@ -88,7 +88,7 @@ module ReferenceExtractor
       file_path = "broken.rb"
       write_app_file(file_path, file_content)
 
-      assert_raises(Parsers::ParseError) do
+      assert_raises(ParseError) do
         @extractor.references_from_file(file_path)
       end
     end

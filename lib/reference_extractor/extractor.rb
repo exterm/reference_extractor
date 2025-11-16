@@ -15,7 +15,7 @@ module ReferenceExtractor
     def initialize(autoloaders:, root_path:)
       @autoloaders = autoloaders
       @root_path = Pathname.new(root_path)
-      @context_provider = ConstantDiscovery.new(root_path:, loaders: @autoloaders)
+      @context_provider = Internal::ConstantDiscovery.new(root_path:, loaders: @autoloaders)
     end
 
     # Extract constant references from a Ruby code string.
@@ -47,12 +47,12 @@ module ReferenceExtractor
     private
 
     def parse_ruby_string(snippet)
-      parser = Parsers::Ruby.new
+      parser = Internal::Parsers::Ruby.new
       parser.call(io: StringIO.new(snippet))
     end
 
     def parse_file(file_path)
-      parser = Parsers::Factory.instance.for_path(file_path.to_s)
+      parser = Internal::Parsers::Factory.instance.for_path(file_path.to_s)
       raise ArgumentError, "Unsupported file type: #{file_path}" unless parser
 
       File.open(file_path, "r") do |io|
@@ -65,9 +65,9 @@ module ReferenceExtractor
     end
 
     def ast_reference_extractor
-      @ast_reference_extractor ||= AstReferenceExtractor.new(
+      @ast_reference_extractor ||= Internal::AstReferenceExtractor.new(
         # TO DO: Add association inspector
-        constant_name_inspectors: [ConstNodeInspector.new],
+        constant_name_inspectors: [Internal::ConstNodeInspector.new],
         context_provider: @context_provider,
         root_path:
       )

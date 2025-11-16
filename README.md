@@ -40,6 +40,7 @@ Relevant open PRs on packwerk:
 
 - add association inspector from Packwerk
 - rename the whole thing to ReferenceExtractor / reference_extractor
+- investigate "don't report reference to same file" fix. Shouldn't ParsedConstantDefinitions handle that?
 
 ## Ideas
 

@@ -12,5 +12,6 @@ module ReferenceExtractor
     autoload :NodeHelpers
     autoload :ParsedConstantDefinitions
     autoload :Parsers
+    autoload :UnresolvedReference
   end
 end

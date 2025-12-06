@@ -21,15 +21,13 @@ module ReferenceExtractor
   extend ActiveSupport::Autoload
 
   # public API
+  autoload :ConstantContext
   autoload :Extractor
   autoload :ParseError
   autoload :Reference
 
   # private API
   autoload :Internal
-
-  autoload :ConstantContext
-  autoload :UnresolvedReference
 
   private_constant :Internal
 end

@@ -4,5 +4,6 @@
 /coverage/
 /doc/
 /pkg/
+/reference_extractor-*.gem
 /spec/reports/
 /tmp/

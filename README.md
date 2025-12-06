@@ -1,93 +1,63 @@
 # 🚧 [WIP] ReferenceExtractor [WIP] 🚧
 
-## Initial Implementation Plan
+## Introduction
 
-Looking back at years of building and using [packwerk](https://github.com/Shopify/packwerk), there are some major things I would like to improve in the next version.
+ReferenceExtractor parses Ruby files and returns the constants they reference, using your Zeitwerk autoloaders to resolve what lives where. It gives you a graph you can use for architecture rules like layering or dependency checks.
 
-Properties I want from ReferenceExtractor:
+ReferenceExtractor is in _prototype_ stage. It works in general but is not battle tested.
 
-- extract the most complex, least specific part into a reusable module. That is, finding all external references from a Ruby file
-- enabled by the above, allow arbitrary (through extension) rules to be expressed over that foundational reference graph
-  - start with layering, the most common architecture rule (_A boundary in software architecture is a line that is crossed by dependencies only in one direction_)
-- optionally and later, future-proof the core
-  - make sure it uses a current version of prism in the canonical way for parsing
-  - remove the dependency on zeitwerk _or_ go all in on zeitwerk and remove constant_resolver
-
-There is a possible version of this where reference_extractor-core is a separate gem.
-
-Also, please note that all names are temporary at this point.
-
-I am not pushing this as a next version of packwerk though due to two reasons:
-
-- Packwerk development has been at a snail's pace for the last few years as Shopify has reduced its ongoing investment to just "keeping the lights on" and I don't have the influence required to change that - I don't want to spend energy arguing, I want to push this out into the world
-- Packwerk's original architecture was based on assumptions that have long been invalidated (e.g. running as a rubocop cop) and it's difficult to remove the remnants of these decisions from its architecture
-  - another outdated assumption is that config validation is slow while the actual reference checking is fast. Nowadays both require bootup of the application, so there is actually no need for a separate `validate` command
-- Packwerk has accumulated a lot of complexity to enable less common use cases and add convenience. Those would slow down iteration towards a different paradigm.
-
-Relevant open PRs on packwerk:
-
-- [packwerk#410](https://github.com/Shopify/packwerk/pull/410) Proof of concept for removing ConstantResolver and using Zeitwerk for ConstantDiscovery
-- [packwerk#397](https://github.com/Shopify/packwerk/pull/397) Allow fetching all references for a file, or all files, using public API
-
-## Implemented Improvements over Packwerk
-
-- Removed dependency on `constant_resolver` by depending directly on zeitwerk for reverse lookup, thanks to @Catsuko ([packwerk#410](https://github.com/Shopify/packwerk/pull/410))
-- Replaced `better_html` with `herb` which comes with a lot less dependencies
-- remove possibly outdated encoding handling from parsers
-- fixed prism deprecation warnings, thanks to @Earlopain ([packwerk#431](https://github.com/Shopify/packwerk/pull/431))
-
-## TO DO
-
-- add association inspector from Packwerk
-- rename the whole thing to ReferenceExtractor / reference_extractor
-- investigate "don't report reference to same file" fix. Shouldn't ParsedConstantDefinitions handle that?
-
-## Ideas
-
-- Shortcuts
-  - for CLI command, use a CLI library instead of hand-rolling it
-    - probably, `optparse` built into the stdlib
-- Name
-  - Lattice, keeps your ruby in shape
-  - Streckennetzplan, a roadmap for your rails architecture
-- Eliminate Rails dependency
-  - would be nice to just depend on zeitwerk, not Rails
-  - instead of reading from `Rails.autoloaders`, can we just get the autoloaders from Zeitwerk?
-- cleanups
-  - pass filenames and paths around as Pathname objects, not strings
-  - introduce an Internal namespace
-
-## Default Gem README
-
-TODO: Delete this and the text below, and describe your gem
-
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/reference_extractor`. To experiment with that code, run `bin/console` for an interactive prompt.
-
-## Installation
-
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
-
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
-```
-
-If bundler is not being used to manage dependencies, install the gem by executing:
-
-```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
-```
+It is based on [packwerk](https://github.com/Shopify/packwerk).
 
 ## Usage
 
-TODO: Write usage instructions here
+```ruby
+extractor = ReferenceExtractor::Extractor.new(
+  autoloaders: Rails.autoloaders,
+  root_path: Rails.root
+)
+
+# From a string snippet
+extractor.references_from_string("Order.find(1)")
+# => [#<ReferenceExtractor::Reference constant=#<ReferenceExtractor::ConstantContext name=\"::Order\" ...>>]
+
+# From a file relative to root_path
+extractor.references_from_file("app/models/user.rb")
+# => [#<ReferenceExtractor::Reference ...>, ...]
+```
 
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+
+## Publishing to RubyGems
+
+1. Update the version in `lib/reference_extractor/version.rb`. Push / merge to main.
+2. Build the gem:
+
+   ```bash
+   gem build reference_extractor.gemspec
+   ```
+
+   This should produce `reference_extractor-<version>.gem`.
+3. Sign in to RubyGems (only needed once):
+
+   ```bash
+   gem signin
+   ```
+
+4. Push the built gem:
+
+   ```bash
+   gem push reference_extractor-<version>.gem
+   ```
+
+5. Tag the release:
+
+   ```bash
+   git tag v<version> && git push origin v<version>
+   ```
 
 ## Contributing
 

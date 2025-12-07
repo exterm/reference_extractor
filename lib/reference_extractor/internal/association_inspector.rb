@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
-
 module ReferenceExtractor
   module Internal
     # Extracts the implicit constant reference from an Active Record association
@@ -19,10 +17,10 @@ module ReferenceExtractor
       ])
 
       def initialize(
-          inflector: ActiveSupport::Inflector,
-          custom_associations: Set.new,
-          excluded_files: DEFAULT_EXCLUDED_FILES
-        )
+        inflector: ActiveSupport::Inflector,
+        custom_associations: Set.new,
+        excluded_files: DEFAULT_EXCLUDED_FILES
+      )
         @inflector = inflector
         @associations = RAILS_ASSOCIATIONS + custom_associations
         @excluded_files = excluded_files

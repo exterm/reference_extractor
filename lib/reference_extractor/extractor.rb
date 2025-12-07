@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "set"
-
 module ReferenceExtractor
   # Public API for extracting constant references from Ruby code (that is autoloaded via Zeitwerk).
   #

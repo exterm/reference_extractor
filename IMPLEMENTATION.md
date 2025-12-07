@@ -39,7 +39,6 @@ Relevant open PRs on packwerk:
 ## TO DO
 
 - add association inspector from Packwerk
-- investigate "don't report reference to same file" fix. Shouldn't ParsedConstantDefinitions handle that?
 
 ## Ideas
 

@@ -38,7 +38,7 @@ Relevant open PRs on packwerk:
 
 ## TO DO
 
-- add association inspector from Packwerk
+- turn all path strings into Pathname objects
 
 ## Ideas
 
@@ -51,6 +51,3 @@ Relevant open PRs on packwerk:
 - Eliminate Rails dependency
   - would be nice to just depend on zeitwerk, not Rails
   - instead of reading from `Rails.autoloaders`, can we just get the autoloaders from Zeitwerk?
-- cleanups
-  - pass filenames and paths around as Pathname objects, not strings
-  - introduce an Internal namespace

@@ -214,7 +214,7 @@ module ReferenceExtractor
           @expected_args = expected_args
         end
 
-        def constant_name_from_node(node, ancestors:)
+        def constant_name_from_node(node, ancestors:, relative_path: nil)
           return nil unless @association
           return nil unless NodeHelpers.method_call?(node)
 

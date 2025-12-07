@@ -57,7 +57,7 @@ module ReferenceExtractor
         constant_name = nil
 
         @constant_name_inspectors.each do |inspector|
-          constant_name = inspector.constant_name_from_node(node, ancestors:)
+          constant_name = inspector.constant_name_from_node(node, ancestors:, relative_path:)
 
           break if constant_name
         end

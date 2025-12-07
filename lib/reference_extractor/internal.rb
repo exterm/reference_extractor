@@ -4,6 +4,7 @@ module ReferenceExtractor
   module Internal
     extend ActiveSupport::Autoload
 
+    autoload :AssociationInspector
     autoload :AstReferenceExtractor
     autoload :ConstNodeInspector
     autoload :ConstantDiscovery

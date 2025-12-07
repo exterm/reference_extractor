@@ -4,7 +4,7 @@ module ReferenceExtractor
   module Internal
     # Extracts a constant name from an AST node of type :const
     class ConstNodeInspector
-      def constant_name_from_node(node, ancestors:)
+      def constant_name_from_node(node, ancestors:, relative_path: nil)
         return nil unless NodeHelpers.constant?(node)
 
         parent = ancestors.first

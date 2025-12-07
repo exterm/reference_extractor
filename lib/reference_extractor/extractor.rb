@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "set"
+
 module ReferenceExtractor
   # Public API for extracting constant references from Ruby code (that is autoloaded via Zeitwerk).
   #
@@ -66,8 +68,10 @@ module ReferenceExtractor
 
     def ast_reference_extractor
       @ast_reference_extractor ||= Internal::AstReferenceExtractor.new(
-        # TO DO: Add association inspector
-        constant_name_inspectors: [Internal::ConstNodeInspector.new],
+        constant_name_inspectors: [
+          Internal::ConstNodeInspector.new,
+          Internal::AssociationInspector.new
+        ],
         context_provider: @context_provider,
         root_path:
       )

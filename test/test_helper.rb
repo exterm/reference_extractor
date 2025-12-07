@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "pathname"
+require "set"
 
 require "reference_extractor"
 

@@ -36,18 +36,7 @@ Relevant open PRs on packwerk:
 - remove possibly outdated encoding handling from parsers
 - fixed prism deprecation warnings, thanks to @Earlopain ([packwerk#431](https://github.com/Shopify/packwerk/pull/431))
 
-## TO DO
-
-- turn all path strings into Pathname objects
-
 ## Ideas
-
-- Shortcuts
-  - for CLI command, use a CLI library instead of hand-rolling it
-    - probably, `optparse` built into the stdlib
-- Name
-  - Lattice, keeps your ruby in shape
-  - Streckennetzplan, a roadmap for your rails architecture
 - Eliminate Rails dependency
   - would be nice to just depend on zeitwerk, not Rails
   - instead of reading from `Rails.autoloaders`, can we just get the autoloaders from Zeitwerk?

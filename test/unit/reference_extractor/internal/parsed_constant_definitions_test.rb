@@ -92,6 +92,14 @@ module ReferenceExtractor
         assert definitions.local_reference?("HELLO", namespace_path: ["Something", "Else", "Sales"])
       end
 
+      test "finds a class defined in the same file" do
+        definitions = ParsedConstantDefinitions.new(
+          root_node: parse_code("class Order; def self_reference; Order; end; end")
+        )
+
+        assert definitions.local_reference?("Order")
+      end
+
       test "recognizes multiple constants nested in a shared ancestor module" do
         definitions = ParsedConstantDefinitions.new(
           root_node: parse_code("module Sales; class Order; end; class Thing; end; end")

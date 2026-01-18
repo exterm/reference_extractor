@@ -48,7 +48,7 @@ module ReferenceExtractor
 
       def excluded?(relative_file)
         @excluded_files.any? do |pattern|
-          File.fnmatch?(pattern, relative_file, File::FNM_PATHNAME | File::FNM_EXTGLOB)
+          relative_file.fnmatch?(pattern, File::FNM_PATHNAME | File::FNM_EXTGLOB)
         end
       end
 

@@ -241,7 +241,7 @@ module ReferenceExtractor
 
         extractor.extract_references(
           root_node,
-          relative_path: Pathname.new(file_path).relative_path_from(app_dir).to_s
+          relative_path: Pathname.new(file_path).relative_path_from(app_dir)
         )
       end
     end

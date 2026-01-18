@@ -26,7 +26,7 @@ module ReferenceExtractor
       ast = parse_ruby_string(snippet)
       return [] unless ast
 
-      extract_references(ast, relative_path: "<snippet>")
+      extract_references(ast, relative_path: Pathname.new("<snippet>"))
     end
 
     # Extract constant references from a Ruby file.
@@ -40,7 +40,7 @@ module ReferenceExtractor
       ast = parse_file(absolute_path)
       return [] unless ast
 
-      relative_path = Pathname.new(absolute_path).relative_path_from(root_path).to_s
+      relative_path = Pathname.new(absolute_path).relative_path_from(root_path)
       extract_references(ast, relative_path:)
     end
 

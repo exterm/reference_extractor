@@ -14,49 +14,49 @@ module ReferenceExtractor
         node = parse("has_lots :order")
         inspector = AssociationInspector.new(inflector: @inflector, custom_associations: [:has_lots])
 
-        assert_equal "Order", inspector.constant_name_from_node(node, ancestors: [], relative_path: "")
+        assert_equal "Order", inspector.constant_name_from_node(node, ancestors: [], relative_path: Pathname.new(""))
       end
 
       test "finds target constant for simple association" do
         node = parse("has_one :order")
         inspector = AssociationInspector.new(inflector: @inflector)
 
-        assert_equal "Order", inspector.constant_name_from_node(node, ancestors: [], relative_path: "")
+        assert_equal "Order", inspector.constant_name_from_node(node, ancestors: [], relative_path: Pathname.new(""))
       end
 
       test "finds target constant for association that pluralizes" do
         node = parse("has_many :orders")
         inspector = AssociationInspector.new(inflector: @inflector)
 
-        assert_equal "Order", inspector.constant_name_from_node(node, ancestors: [], relative_path: "")
+        assert_equal "Order", inspector.constant_name_from_node(node, ancestors: [], relative_path: Pathname.new(""))
       end
 
       test "finds target constant for association if explicitly specified" do
         node = parse("has_one :cool_order, { class_name: 'Order' }")
         inspector = AssociationInspector.new(inflector: @inflector)
 
-        assert_equal "Order", inspector.constant_name_from_node(node, ancestors: [], relative_path: "")
+        assert_equal "Order", inspector.constant_name_from_node(node, ancestors: [], relative_path: Pathname.new(""))
       end
 
       test "rejects method calls that are not associations" do
         node = parse('puts "Hello World"')
         inspector = AssociationInspector.new(inflector: @inflector)
 
-        assert_nil inspector.constant_name_from_node(node, ancestors: [], relative_path: "")
+        assert_nil inspector.constant_name_from_node(node, ancestors: [], relative_path: Pathname.new(""))
       end
 
       test "gives up on metaprogrammed associations" do
         node = parse("has_one association_name")
         inspector = AssociationInspector.new(inflector: @inflector)
 
-        assert_nil inspector.constant_name_from_node(node, ancestors: [], relative_path: "")
+        assert_nil inspector.constant_name_from_node(node, ancestors: [], relative_path: Pathname.new(""))
       end
 
       test "gives up on dynamic class name" do
         node = parse("has_one :order, class_name: Order.name")
         inspector = AssociationInspector.new(inflector: @inflector)
 
-        assert_nil inspector.constant_name_from_node(node, ancestors: [], relative_path: "")
+        assert_nil inspector.constant_name_from_node(node, ancestors: [], relative_path: Pathname.new(""))
       end
 
       test "gives up on excluded file node" do
@@ -68,7 +68,7 @@ module ReferenceExtractor
         assert_nil inspector.constant_name_from_node(
           node,
           ancestors: [],
-          relative_path: "app/serializers/my_serializer.rb"
+          relative_path: Pathname.new("app/serializers/my_serializer.rb")
         )
       end
 
@@ -79,13 +79,13 @@ module ReferenceExtractor
         assert_nil inspector.constant_name_from_node(
           node,
           ancestors: [],
-          relative_path: "spec/factories/orders.rb"
+          relative_path: Pathname.new("spec/factories/orders.rb")
         )
 
         assert_nil inspector.constant_name_from_node(
           node,
           ancestors: [],
-          relative_path: "test/factories/orders.rb"
+          relative_path: Pathname.new("test/factories/orders.rb")
         )
       end
 
@@ -96,7 +96,7 @@ module ReferenceExtractor
         assert_nil inspector.constant_name_from_node(
           node,
           ancestors: [],
-          relative_path: "app/serializers/v1/order_serializer.rb"
+          relative_path: Pathname.new("app/serializers/v1/order_serializer.rb")
         )
       end
 

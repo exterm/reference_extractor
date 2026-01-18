@@ -30,7 +30,7 @@ module ReferenceExtractor
       reference = references.first
       assert_equal "::Order", reference.constant.name
       assert_equal "components/sales/app/models/order.rb", reference.constant.location.to_s
-      assert_equal "<snippet>", reference.relative_path
+      assert_equal Pathname.new("<snippet>"), reference.relative_path
     end
 
     test "references_from_string handles invalid syntax gracefully" do
@@ -62,7 +62,7 @@ module ReferenceExtractor
       assert_equal ["::Order", "::Sales::Entry"], constant_names
 
       # Verify relative path is set correctly
-      assert_equal "test_file.rb", references.first.relative_path
+      assert_equal Pathname.new("test_file.rb"), references.first.relative_path
     end
 
     test "references_from_file handles absolute paths" do

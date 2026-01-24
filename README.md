@@ -34,30 +34,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 ## Publishing to RubyGems
 
 1. Update the version in `lib/reference_extractor/version.rb`. Push / merge to main.
-2. Build the gem:
-
-   ```bash
-   gem build reference_extractor.gemspec
-   ```
-
-   This should produce `reference_extractor-<version>.gem`.
-3. Sign in to RubyGems (only needed once):
-
-   ```bash
-   gem signin
-   ```
-
-4. Push the built gem:
-
-   ```bash
-   gem push reference_extractor-<version>.gem
-   ```
-
-5. Tag the release:
-
-   ```bash
-   git tag v<version> && git push origin v<version>
-   ```
+2. Run `rake release`
 
 ## Contributing
 

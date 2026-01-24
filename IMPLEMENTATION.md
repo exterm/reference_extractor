@@ -40,3 +40,4 @@ Relevant open PRs on packwerk:
 - Eliminate Rails dependency
   - would be nice to just depend on zeitwerk, not Rails
   - instead of reading from `Rails.autoloaders`, can we just get the autoloaders from Zeitwerk?
+- remove association inspector for now? It may cause more problems than it solves

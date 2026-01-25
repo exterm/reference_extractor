@@ -44,11 +44,13 @@ module ReferenceExtractor
       # Extract and resolve all references from the AST in one step
       def extract_references(root_node, relative_path:)
         local_constant_definitions = ParsedConstantDefinitions.new(root_node: root_node)
-        unresolved_references = collect_references(
+        unresolved_references = []
+        collect_references(
           root_node,
           ancestors: [],
           relative_path: relative_path,
-          local_constant_definitions: local_constant_definitions
+          local_constant_definitions: local_constant_definitions,
+          references: unresolved_references
         )
         self.class.get_fully_qualified_references_from(unresolved_references, @context_provider)
       end
@@ -96,24 +98,28 @@ module ReferenceExtractor
         )
       end
 
-      def collect_references(node, ancestors:, relative_path:, local_constant_definitions:)
+      def collect_references(node, ancestors:, relative_path:, local_constant_definitions:, references:)
         reference = reference_from_node(
           node,
           ancestors:,
           relative_path:,
           local_constant_definitions:
         )
+        references << reference if reference
 
-        child_references = NodeHelpers.each_child(node).flat_map do |child|
+        ancestors.unshift(node)
+        NodeHelpers.each_child(node) do |child|
           collect_references(
             child,
-            ancestors: [node] + ancestors,
+            ancestors:,
             relative_path:,
-            local_constant_definitions:
+            local_constant_definitions:,
+            references:
           )
         end
+        ancestors.shift
 
-        ([reference] + child_references).compact
+        references
       end
     end
   end

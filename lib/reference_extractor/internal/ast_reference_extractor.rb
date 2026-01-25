@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "prism"
+
 module ReferenceExtractor
   module Internal
     # Extracts a possible constant reference from a given AST node.
@@ -44,15 +46,16 @@ module ReferenceExtractor
       # Extract and resolve all references from the AST in one step
       def extract_references(root_node, relative_path:)
         local_constant_definitions = ParsedConstantDefinitions.new(root_node: root_node)
-        unresolved_references = []
-        collect_references(
-          root_node,
-          ancestors: [],
-          relative_path: relative_path,
+
+        visitor = ReferenceCollectorVisitor.new(
+          inspectors: @constant_name_inspectors,
           local_constant_definitions: local_constant_definitions,
-          references: unresolved_references
+          relative_path: relative_path,
+          extractor: self
         )
-        self.class.get_fully_qualified_references_from(unresolved_references, @context_provider)
+        root_node.accept(visitor)
+
+        self.class.get_fully_qualified_references_from(visitor.references, @context_provider)
       end
 
       def reference_from_node(node, ancestors:, relative_path:, local_constant_definitions:)
@@ -98,28 +101,69 @@ module ReferenceExtractor
         )
       end
 
-      def collect_references(node, ancestors:, relative_path:, local_constant_definitions:, references:)
-        reference = reference_from_node(
-          node,
-          ancestors:,
-          relative_path:,
-          local_constant_definitions:
-        )
-        references << reference if reference
+      # Visitor that collects references from the AST
+      class ReferenceCollectorVisitor < Prism::Visitor
+        attr_reader :references
 
-        ancestors.unshift(node)
-        NodeHelpers.each_child(node) do |child|
-          collect_references(
-            child,
-            ancestors:,
-            relative_path:,
-            local_constant_definitions:,
-            references:
-          )
+        def initialize(inspectors:, local_constant_definitions:, relative_path:, extractor:)
+          super()
+          @inspectors = inspectors
+          @local_constant_definitions = local_constant_definitions
+          @relative_path = relative_path
+          @extractor = extractor
+          @ancestors = []
+          @references = []
         end
-        ancestors.shift
 
-        references
+        # Constants - check for references
+        def visit_constant_read_node(node)
+          check_for_reference(node)
+          super
+        end
+
+        def visit_constant_path_node(node)
+          check_for_reference(node)
+          # Track constant path as ancestor so child constants can be skipped
+          with_ancestor(node) { super }
+        end
+
+        # Method calls - check for association references
+        def visit_call_node(node)
+          check_for_reference(node)
+          with_ancestor(node) { super }
+        end
+
+        # Namespace tracking
+        def visit_class_node(node)
+          with_ancestor(node) { super }
+        end
+
+        def visit_module_node(node)
+          with_ancestor(node) { super }
+        end
+
+        def visit_block_node(node)
+          with_ancestor(node) { super }
+        end
+
+        private
+
+        def with_ancestor(node)
+          @ancestors.unshift(node)
+          yield
+        ensure
+          @ancestors.shift
+        end
+
+        def check_for_reference(node)
+          reference = @extractor.reference_from_node(
+            node,
+            ancestors: @ancestors,
+            relative_path: @relative_path,
+            local_constant_definitions: @local_constant_definitions
+          )
+          @references << reference if reference
+        end
       end
     end
   end

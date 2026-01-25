@@ -1,188 +1,176 @@
 # frozen_string_literal: true
 
-require "parser"
-require "parser/ast/node"
+require "prism"
 
 module ReferenceExtractor
   module Internal
-    # Convenience methods for working with Parser::AST::Node nodes.
+    # Convenience methods for working with Prism nodes.
     module NodeHelpers
       class TypeError < ArgumentError; end
 
       class << self
         def class_or_module_name(class_or_module_node)
-          case type_of(class_or_module_node)
-          when CLASS, MODULE
-            # (class (const nil :Foo) (const nil :Bar) (nil))
-            #   "class Foo < Bar; end"
-            # (module (const nil :Foo) (nil))
-            #   "module Foo; end"
-            identifier = class_or_module_node.children[0]
-            constant_name(identifier)
+          case class_or_module_node
+          when Prism::ClassNode, Prism::ModuleNode
+            constant_name(class_or_module_node.constant_path)
           else
             raise TypeError
           end
         end
 
         def constant_name(constant_node)
-          case type_of(constant_node)
-          when CONSTANT_ROOT_NAMESPACE
-            ""
-          when CONSTANT, CONSTANT_ASSIGNMENT, SELF
-            # (const nil :Foo)
-            #   "Foo"
-            # (const (cbase) :Foo)
-            #   "::Foo"
-            # (const (lvar :a) :Foo)
-            #   "a::Foo"
-            # (casgn nil :Foo (int 1))
-            #   "Foo = 1"
-            # (casgn (cbase) :Foo (int 1))
-            #   "::Foo = 1"
-            # (casgn (lvar :a) :Foo (int 1))
-            #   "a::Foo = 1"
-            # (casgn (self) :Foo (int 1))
-            #   "self::Foo = 1"
-            namespace, name = constant_node.children
+          case constant_node
+          when Prism::ConstantReadNode
+            constant_node.name.to_s
+          when Prism::ConstantPathNode
+            parent = constant_node.parent
+            name = constant_node.name.to_s
 
-            if namespace
-              [constant_name(namespace), name].join("::")
+            if parent.nil?
+              # ::Foo - absolute path with no parent means root namespace
+              "::#{name}"
             else
-              name.to_s
+              parent_name = constant_name(parent)
+              "#{parent_name}::#{name}"
             end
+          when Prism::ConstantWriteNode
+            constant_node.name.to_s
+          when Prism::ConstantPathWriteNode
+            constant_name(constant_node.target)
+          when Prism::ConstantPathTargetNode
+            parent = constant_node.parent
+            name = constant_node.name.to_s
+
+            if parent.nil?
+              "::#{name}"
+            else
+              "#{constant_name(parent)}::#{name}"
+            end
+          when Prism::SelfNode
+            raise TypeError
           else
             raise TypeError
           end
         end
 
-        def each_child(node, &block)
-          if block
-            node.children.each do |child|
-              yield(child) if child.is_a?(Parser::AST::Node)
-            end
-          else
-            enum_for(:each_child, node)
-          end
-        end
-
         def enclosing_namespace_path(starting_node, ancestors:)
-          ancestors.select { |n| [CLASS, MODULE].include?(type_of(n)) }
+          ancestors.select { |n| n.is_a?(Prism::ClassNode) || n.is_a?(Prism::ModuleNode) }
             .each_with_object([]) do |node, namespace|
             # when evaluating `class Child < Parent`, the const node for `Parent` is a child of the class
             # node, so it'll be an ancestor, but `Parent` is not evaluated in the namespace of `Child`, so
             # we need to skip it here
-            next if type_of(node) == CLASS && parent_class(node) == starting_node
+            next if node.is_a?(Prism::ClassNode) && superclass_contains?(node, starting_node)
 
             namespace.prepend(class_or_module_name(node))
           end
         end
 
         def literal_value(string_or_symbol_node)
-          case type_of(string_or_symbol_node)
-          when STRING, SYMBOL
-            # (str "foo")
-            #   "'foo'"
-            # (sym :foo)
-            #   ":foo"
-            string_or_symbol_node.children[0]
+          case string_or_symbol_node
+          when Prism::StringNode
+            string_or_symbol_node.unescaped
+          when Prism::SymbolNode
+            string_or_symbol_node.value.to_sym
           else
             raise TypeError
           end
         end
 
         def location(node)
-          location = node.location
-          Node::Location.new(location.line, location.column)
+          loc = node.location
+          Node::Location.new(loc.start_line, loc.start_column)
         end
 
         def constant?(node)
-          type_of(node) == CONSTANT
+          node.is_a?(Prism::ConstantReadNode) || node.is_a?(Prism::ConstantPathNode)
         end
 
         def constant_assignment?(node)
-          type_of(node) == CONSTANT_ASSIGNMENT
+          node.is_a?(Prism::ConstantWriteNode) || node.is_a?(Prism::ConstantPathWriteNode)
         end
 
         def class?(node)
-          type_of(node) == CLASS
+          node.is_a?(Prism::ClassNode)
+        end
+
+        def module?(node)
+          node.is_a?(Prism::ModuleNode)
         end
 
         def method_call?(node)
-          type_of(node) == METHOD_CALL
+          node.is_a?(Prism::CallNode)
         end
 
         def hash?(node)
-          type_of(node) == HASH
+          node.is_a?(Prism::HashNode) || node.is_a?(Prism::KeywordHashNode)
         end
 
         def string?(node)
-          type_of(node) == STRING
+          node.is_a?(Prism::StringNode)
         end
 
         def symbol?(node)
-          type_of(node) == SYMBOL
+          node.is_a?(Prism::SymbolNode)
+        end
+
+        def block?(node)
+          node.is_a?(Prism::BlockNode)
         end
 
         def method_arguments(method_call_node)
           raise TypeError unless method_call?(method_call_node)
 
-          # (send (lvar :foo) :bar (int 1))
-          #   "foo.bar(1)"
-          method_call_node.children.slice(2..-1)
+          method_call_node.arguments&.arguments || []
         end
 
         def method_name(method_call_node)
           raise TypeError unless method_call?(method_call_node)
 
-          # (send (lvar :foo) :bar (int 1))
-          #   "foo.bar(1)"
-          method_call_node.children[1]
+          method_call_node.name
         end
 
         def module_name_from_definition(node)
-          case type_of(node)
-          when CLASS, MODULE
-            # "class My::Class; end"
-            # "module My::Module; end"
+          case node
+          when Prism::ClassNode, Prism::ModuleNode
             class_or_module_name(node)
-          when CONSTANT_ASSIGNMENT
-            # "My::Class = ..."
-            # "My::Module = ..."
-            rvalue = node.children.last
+          when Prism::ConstantWriteNode, Prism::ConstantPathWriteNode
+            rvalue = node.value
 
-            case type_of(rvalue)
-            when METHOD_CALL
-              # "Class.new"
-              # "Module.new"
+            case rvalue
+            when Prism::CallNode
+              # "Class.new" or "Module.new" or "Class.new do end"
+              # In Prism, the block is a property of CallNode, not a separate node type
               constant_name(node) if module_creation?(rvalue)
-            when BLOCK
-              # "Class.new do end"
-              # "Module.new do end"
-              constant_name(node) if module_creation?(method_call_node(rvalue))
             end
           end
         end
 
         def name_location(node)
-          location = node.location
-
-          if location.respond_to?(:name)
-            name = location.name
-            Node::Location.new(name.line, name.column)
+          name_loc = case node
+          when Prism::ConstantReadNode
+            node.location
+          when Prism::ConstantPathNode
+            node.name_loc
+          when Prism::ConstantWriteNode
+            node.name_loc
+          when Prism::ConstantPathWriteNode
+            node.target.name_loc
           end
+
+          Node::Location.new(name_loc.start_line, name_loc.start_column) if name_loc
         end
 
         def parent_class(class_node)
-          raise TypeError unless type_of(class_node) == CLASS
+          raise TypeError unless class?(class_node)
 
-          # (class (const nil :Foo) (const nil :Bar) (nil))
-          #   "class Foo < Bar; end"
-          class_node.children[1]
+          class_node.superclass
         end
 
         def parent_module_name(ancestors:)
+          # In Prism, CallNode contains BlockNode (opposite of Parser gem)
+          # So we look for CallNodes with blocks instead of BlockNodes
           definitions = ancestors
-            .select { |n| [CLASS, MODULE, CONSTANT_ASSIGNMENT, BLOCK].include?(type_of(n)) }
+            .select { |n| class?(n) || module?(n) || constant_assignment?(n) || (method_call?(n) && n.block) }
 
           names = definitions.map do |definition|
             name_part_from_definition(definition)
@@ -194,75 +182,36 @@ module ReferenceExtractor
         def value_from_hash(hash_node, key)
           raise TypeError unless hash?(hash_node)
 
-          pair = hash_pairs(hash_node).detect { |pair_node| literal_value(hash_pair_key(pair_node)) == key }
-          hash_pair_value(pair) if pair
+          pair = hash_node.elements.detect do |element|
+            element.is_a?(Prism::AssocNode) &&
+              (element.key.is_a?(Prism::SymbolNode) || element.key.is_a?(Prism::StringNode)) &&
+              literal_value(element.key) == key
+          end
+          pair&.value
         end
 
         private
 
-        BLOCK = :block
-        CLASS = :class
-        CONSTANT = :const
-        CONSTANT_ASSIGNMENT = :casgn
-        CONSTANT_ROOT_NAMESPACE = :cbase
-        HASH = :hash
-        HASH_PAIR = :pair
-        METHOD_CALL = :send
-        MODULE = :module
-        SELF = :self
-        STRING = :str
-        SYMBOL = :sym
+        def superclass_contains?(class_node, target_node)
+          superclass = class_node.superclass
+          return false unless superclass
 
-        private_constant(
-          :BLOCK, :CLASS, :CONSTANT, :CONSTANT_ASSIGNMENT, :CONSTANT_ROOT_NAMESPACE, :HASH, :HASH_PAIR, :METHOD_CALL,
-          :MODULE, :SELF, :STRING, :SYMBOL
-        )
+          # Check if target_node is the superclass or contained within the superclass subtree
+          return true if superclass == target_node
 
-        def type_of(node)
-          node.type
+          node_contains?(superclass, target_node)
         end
 
-        def hash_pair_key(hash_pair_node)
-          raise TypeError unless type_of(hash_pair_node) == HASH_PAIR
+        def node_contains?(node, target)
+          return true if node == target
 
-          # (pair (int 1) (int 2))
-          #   "1 => 2"
-          # (pair (sym :answer) (int 42))
-          #   "answer: 42"
-          hash_pair_node.children[0]
-        end
-
-        def hash_pair_value(hash_pair_node)
-          raise TypeError unless type_of(hash_pair_node) == HASH_PAIR
-
-          # (pair (int 1) (int 2))
-          #   "1 => 2"
-          # (pair (sym :answer) (int 42))
-          #   "answer: 42"
-          hash_pair_node.children[1]
-        end
-
-        def hash_pairs(hash_node)
-          raise TypeError unless hash?(hash_node)
-
-          # (hash (pair (int 1) (int 2)) (pair (int 3) (int 4)))
-          #   "{1 => 2, 3 => 4}"
-          hash_node.children.select { |n| type_of(n) == HASH_PAIR }
-        end
-
-        def method_call_node(block_node)
-          raise TypeError unless type_of(block_node) == BLOCK
-
-          # (block (send (lvar :foo) :bar) (args) (int 42))
-          #   "foo.bar do 42 end"
-          block_node.children[0]
+          node.child_nodes.compact.any? { |child| node_contains?(child, target) }
         end
 
         def module_creation?(node)
-          # "Class.new"
-          # "Module.new"
+          # "Class.new" or "Module.new"
           method_call?(node) &&
-            dynamic_class_creation?(receiver(node)) &&
+            dynamic_class_creation?(node.receiver) &&
             method_name(node) == :new
         end
 
@@ -272,30 +221,26 @@ module ReferenceExtractor
             ["Class", "Module"].include?(constant_name(node))
         end
 
-        def name_from_block_definition(node)
-          if method_name(method_call_node(node)) == :class_eval
-            receiver = receiver(node)
+        def name_from_block_call(call_node)
+          if call_node.name == :class_eval
+            receiver = call_node.receiver
             constant_name(receiver) if receiver && constant?(receiver)
           end
         end
 
         def name_part_from_definition(node)
-          case type_of(node)
-          when CLASS, MODULE, CONSTANT_ASSIGNMENT
+          case node
+          when Prism::ClassNode, Prism::ModuleNode, Prism::ConstantWriteNode, Prism::ConstantPathWriteNode
             module_name_from_definition(node)
-          when BLOCK
-            name_from_block_definition(node)
-          end
-        end
-
-        def receiver(method_call_or_block_node)
-          case type_of(method_call_or_block_node)
-          when METHOD_CALL
-            method_call_or_block_node.children[0]
-          when BLOCK
-            receiver(method_call_node(method_call_or_block_node))
-          else
-            raise TypeError
+          when Prism::BlockNode
+            # For blocks, look at the parent CallNode
+            # Note: In Prism, BlockNode is a child of CallNode, not the other way around
+            # The ancestors list should have the CallNode that owns this block
+            nil
+          when Prism::CallNode
+            # This is a call node with a block (like class_eval)
+            # Check if it's a class_eval call
+            name_from_block_call(node)
           end
         end
       end

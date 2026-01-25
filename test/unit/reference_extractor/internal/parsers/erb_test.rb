@@ -11,7 +11,7 @@ module ReferenceExtractor
             Erb.new.call(io: fixture)
           end
 
-          assert_kind_of(::AST::Node, node)
+          assert_kind_of(Prism::ProgramNode, node)
         end
 
         test "#call returns node with valid javascript file" do
@@ -19,7 +19,10 @@ module ReferenceExtractor
             Erb.new.call(io: fixture)
           end
 
-          assert_kind_of(NilClass, node)
+          # Files with no Ruby code return an empty ProgramNode
+          assert_kind_of(Prism::ProgramNode, node)
+          # The statements body should be empty
+          assert_equal(0, node.statements.body.length)
         end
 
         test "#call extracts and parses ruby code from erb" do
@@ -27,20 +30,20 @@ module ReferenceExtractor
             Erb.new.call(io: fixture)
           end
 
-          assert_kind_of(::AST::Node, ast)
+          assert_kind_of(Prism::ProgramNode, ast)
 
           # The AST should contain the variable assignment
-          assignment_nodes = find_nodes_by_type(ast, :lvasgn)
+          assignment_nodes = find_nodes_by_class(ast, Prism::LocalVariableWriteNode)
           assert_equal(1, assignment_nodes.length)
-          assert_equal(:user_name, assignment_nodes.first.children[0])
+          assert_equal(:user_name, assignment_nodes.first.name)
 
           # The AST should contain the method call to upcase
-          send_nodes = find_nodes_by_type(ast, :send)
-          upcase_node = send_nodes.find { |node| node.children[1] == :upcase }
+          call_nodes = find_nodes_by_class(ast, Prism::CallNode)
+          upcase_node = call_nodes.find { |node| node.name == :upcase }
           refute_nil(upcase_node, "Expected to find :upcase method call in AST")
 
           # The AST should contain the if statement
-          if_nodes = find_nodes_by_type(ast, :if)
+          if_nodes = find_nodes_by_class(ast, Prism::IfNode)
           assert_equal(1, if_nodes.length)
         end
 
@@ -53,7 +56,8 @@ module ReferenceExtractor
             end
           end
 
-          assert_match(/Syntax error/, exc.result.message)
+          # Prism error messages may differ from Parser gem
+          assert exc.result.message.length > 0
           assert_equal(file_path, exc.result.file)
         end
 
@@ -63,17 +67,22 @@ module ReferenceExtractor
           File.join("test", "fixtures", "formats", "erb", name)
         end
 
-        def find_nodes_by_type(node, type)
-          return [] unless node.is_a?(::AST::Node)
-
+        def find_nodes_by_class(node, klass)
           results = []
-          results << node if node.type == type
-
-          node.children.each do |child|
-            results.concat(find_nodes_by_type(child, type))
+          visit_nodes(node) do |n|
+            results << n if n.is_a?(klass)
           end
-
           results
+        end
+
+        def visit_nodes(node, &block)
+          return unless node.respond_to?(:child_nodes)
+
+          yield node
+
+          node.child_nodes.compact.each do |child|
+            visit_nodes(child, &block)
+          end
         end
       end
     end

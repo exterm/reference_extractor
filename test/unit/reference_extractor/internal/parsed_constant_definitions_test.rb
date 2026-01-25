@@ -112,7 +112,9 @@ module ReferenceExtractor
       test "doesn't count definition as reference" do
         ast = parse_code("class HelloWorld; end")
 
-        const_node = NodeHelpers.each_child(ast).find { |n| NodeHelpers.constant?(n) }
+        # Get the class node from the ProgramNode, then get its constant_path
+        class_node = ast.statements.body.first
+        const_node = class_node.constant_path
 
         definitions = ParsedConstantDefinitions.new(
           root_node: ast
@@ -150,7 +152,7 @@ module ReferenceExtractor
       private
 
       def parse_code(string)
-        ParserTestHelper.parse(string)
+        ParserTestHelper.parse_raw(string)
       end
     end
   end

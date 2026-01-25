@@ -44,7 +44,7 @@ module ReferenceExtractor
 
       test "#constant_name_from_node should return correct name for simple class definition" do
         parent = parse("class Order; end")
-        node = NodeHelpers.each_child(parent).entries[0]
+        node = parent.constant_path
 
         constant_name = @inspector.constant_name_from_node(node, ancestors: [parent])
 
@@ -53,8 +53,8 @@ module ReferenceExtractor
 
       test "#constant_name_from_node should return correct name for nested and compact class definition" do
         grandparent = parse("module Foo::Bar; class Sales::Order; end; end")
-        parent = NodeHelpers.each_child(grandparent).entries[1] # module node; second child is the body of the module
-        node = NodeHelpers.each_child(parent).entries[0] # class node; first child is constant
+        parent = grandparent.body.body.first # class Sales::Order; end
+        node = parent.constant_path
 
         constant_name = @inspector.constant_name_from_node(node, ancestors: [parent, grandparent])
 
@@ -63,10 +63,13 @@ module ReferenceExtractor
 
       test "#constant_name_from_node should gracefully return nil for dynamically namespaced constants" do
         grandparent = parse("module CsvExportSharedTests; setup do self.class::HEADERS end; end")
-        parent = NodeHelpers.each_child(grandparent).entries[1] # setup do self.class::HEADERS end
-        node = NodeHelpers.each_child(parent).entries[2] # self.class::HEADERS
+        # Navigate to the constant path node: self.class::HEADERS
+        # module body -> call node (setup do...) -> block -> statements -> constant path
+        setup_call = grandparent.body.body.first
+        block_body = setup_call.block.body.body.first
+        node = block_body
 
-        constant_name = @inspector.constant_name_from_node(node, ancestors: [parent, grandparent])
+        constant_name = @inspector.constant_name_from_node(node, ancestors: [setup_call.block, setup_call, grandparent])
 
         assert_nil constant_name
       end

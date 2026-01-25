@@ -3,7 +3,7 @@
 require "test_helper"
 require "support/reference_extractor/parser_test_helper"
 
-require "parser"
+require "prism"
 
 module ReferenceExtractor
   module Internal
@@ -29,6 +29,7 @@ module ReferenceExtractor
       end
 
       test ".constant_name raises a TypeError for dynamically namespaced constants" do
+        # "self.class::HEADERS" - the constant path has a call node as parent
         node = parse("self.class::HEADERS")
         assert_raises(NodeHelpers::TypeError) { NodeHelpers.constant_name(node) }
       end
@@ -36,22 +37,6 @@ module ReferenceExtractor
       test ".constant_name preserves the name of a fully-qualified constant" do
         node = parse("::My::Constant")
         assert_equal "::My::Constant", NodeHelpers.constant_name(node)
-      end
-
-      test ".each_child with a block iterates over all child nodes" do
-        node = parse("My::Constant = 6 * 7")
-        children = []
-        NodeHelpers.each_child(node) do |child|
-          children << child
-        end
-        assert_equal [parse("My"), parse("6 * 7")], children
-      end
-
-      test ".each_child without a block returns an enumerator" do
-        node = parse("My::Constant = 6 * 7")
-        children = NodeHelpers.each_child(node)
-        assert_instance_of Enumerator, children
-        assert_equal [parse("My"), parse("6 * 7")], children.entries
       end
 
       test "#enclosing_namespace_path should return empty path for const node" do
@@ -64,7 +49,8 @@ module ReferenceExtractor
 
       test "#enclosing_namespace_path should return correct path for simple class definition" do
         parent = parse("class Order; end")
-        node = NodeHelpers.each_child(parent).entries[0]
+        # For ClassNode, the constant_path is the first meaningful child
+        node = parent.constant_path
 
         path = NodeHelpers.enclosing_namespace_path(node, ancestors: [parent])
 
@@ -73,8 +59,10 @@ module ReferenceExtractor
 
       test "#enclosing_namespace_path should skip child class name when finding path for parent class" do
         grandparent = parse("module Sales; class Order < Base; end; end")
-        parent = NodeHelpers.each_child(grandparent).entries[1] # module node; second child is the body of the module
-        node = NodeHelpers.each_child(parent).entries[1] # class node; second child is parent
+        # Get the class node from the module's body
+        parent = grandparent.body.body.first # class Order < Base; end
+        # Get the superclass node (Base)
+        node = parent.superclass
 
         path = NodeHelpers.enclosing_namespace_path(node, ancestors: [parent, grandparent])
 
@@ -83,8 +71,10 @@ module ReferenceExtractor
 
       test "#enclosing_namespace_path should return correct path for nested and compact class definition" do
         grandparent = parse("module Foo::Bar; class Sales::Order; end; end")
-        parent = NodeHelpers.each_child(grandparent).entries[1] # module node; second child is the body of the module
-        node = NodeHelpers.each_child(parent).entries[0] # class node; first child is constant
+        # module body -> class node
+        parent = grandparent.body.body.first # class Sales::Order; end
+        # class constant_path
+        node = parent.constant_path
 
         path = NodeHelpers.enclosing_namespace_path(node, ancestors: [parent, grandparent])
 
@@ -108,7 +98,11 @@ module ReferenceExtractor
 
       test ".method_arguments returns the arguments of a method call" do
         node = parse("a.b(:c, 'd', E)")
-        assert_equal [parse(":c"), parse("'d'"), parse("E")], NodeHelpers.method_arguments(node)
+        args = NodeHelpers.method_arguments(node)
+        assert_equal 3, args.length
+        assert_equal :c, NodeHelpers.literal_value(args[0])
+        assert_equal "d", NodeHelpers.literal_value(args[1])
+        assert_equal "E", NodeHelpers.constant_name(args[2])
       end
 
       test ".method_name returns the name of a method call" do
@@ -125,7 +119,7 @@ module ReferenceExtractor
           ["My::Class = Class.new do end", "My::Class"]
         ].each do |class_definition, name|
           node = parse(class_definition)
-          assert_equal name, NodeHelpers.module_name_from_definition(node)
+          assert_equal name, NodeHelpers.module_name_from_definition(node), "Failed for: #{class_definition}"
         end
       end
 
@@ -138,7 +132,7 @@ module ReferenceExtractor
           ["My::Module = Module.new do end", "My::Module"]
         ].each do |module_definition, name|
           node = parse(module_definition)
-          assert_equal name, NodeHelpers.module_name_from_definition(node)
+          assert_equal name, NodeHelpers.module_name_from_definition(node), "Failed for: #{module_definition}"
         end
       end
 
@@ -154,7 +148,7 @@ module ReferenceExtractor
           "MyConstant = -> {}"
         ].each do |module_definition|
           node = parse(module_definition)
-          assert_nil NodeHelpers.module_name_from_definition(node)
+          assert_nil NodeHelpers.module_name_from_definition(node), "Should be nil for: #{module_definition}"
         end
       end
 
@@ -175,12 +169,13 @@ module ReferenceExtractor
 
       test ".parent_class returns the constant referring to the parent class in a class being defined with the class keyword" do
         node = parse("class B < A; end")
-        assert_equal parse("A"), NodeHelpers.parent_class(node)
+        superclass = NodeHelpers.parent_class(node)
+        assert_equal "A", NodeHelpers.constant_name(superclass)
       end
 
-      test ".parent_module_name returns the name of a constant’s enclosing module" do
+      test ".parent_module_name returns the name of a constant's enclosing module" do
         grandparent = parse("module A; class B; C; end end")
-        parent = NodeHelpers.each_child(grandparent).entries[1] # "class B; C; end"
+        parent = grandparent.body.body.first # "class B; C; end"
         assert_equal "A::B", NodeHelpers.parent_module_name(ancestors: [parent, grandparent])
       end
 
@@ -190,20 +185,22 @@ module ReferenceExtractor
 
       test ".parent_module_name supports constant assignment" do
         grandparent = parse("module A; B = Class.new do C end end")
-        parent = NodeHelpers.each_child(grandparent).entries[1] # "B = Class.new do C end"
+        parent = grandparent.body.body.first # "B = Class.new do C end"
         assert_equal "A::B", NodeHelpers.parent_module_name(ancestors: [parent, grandparent])
       end
 
       test ".parent_module_name supports class_eval with no receiver" do
         grandparent = parse("module A; class_eval do C; end end")
-        parent = NodeHelpers.each_child(grandparent).entries[1] # "class_eval do C; end"
-        assert_equal "A", NodeHelpers.parent_module_name(ancestors: [parent, grandparent])
+        # Get the call node (class_eval do C; end)
+        call_node = grandparent.body.body.first
+        assert_equal "A", NodeHelpers.parent_module_name(ancestors: [call_node, grandparent])
       end
 
       test ".parent_module_name supports class_eval with an explicit receiver" do
         grandparent = parse("module A; B.class_eval do C; end end")
-        parent = NodeHelpers.each_child(grandparent).entries[1] # "B.class_eval do C; end"
-        assert_equal "A::B", NodeHelpers.parent_module_name(ancestors: [parent, grandparent])
+        # Get the call node (B.class_eval do C; end)
+        call_node = grandparent.body.body.first
+        assert_equal "A::B", NodeHelpers.parent_module_name(ancestors: [call_node, grandparent])
       end
 
       test ".class? can identify a class node" do
@@ -236,7 +233,9 @@ module ReferenceExtractor
 
       test ".value_from_hash looks up the node for a key in a hash" do
         hash_node = parse("{ apples: 13, oranges: 27 }")
-        assert_equal parse("13"), NodeHelpers.value_from_hash(hash_node, :apples)
+        value = NodeHelpers.value_from_hash(hash_node, :apples)
+        assert_kind_of Prism::IntegerNode, value
+        assert_equal 13, value.value
       end
 
       test ".value_from_hash returns nil if a key isn't found in a hash" do

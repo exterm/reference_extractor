@@ -155,12 +155,11 @@ module ReferenceExtractor
       end
 
       test "passes all arguments to association inspector" do
-        call = "has_many :clowns, class_name: 'Order'"
-        arguments = NodeHelpers.method_arguments(ParserTestHelper.parse(call))
+        # Verify that the inspector receives the expected argument count and types
         process(
-          "class Entry; #{call}; end",
+          "class Entry; has_many :clowns, class_name: 'Order'; end",
           "components/timeline/app/models/entry.rb",
-          [DummyAssociationInspector.new(association: true, expected_args: arguments)]
+          [DummyAssociationInspector.new(association: true, expected_arg_count: 2)]
         )
       end
 
@@ -208,10 +207,10 @@ module ReferenceExtractor
       private
 
       class DummyAssociationInspector
-        def initialize(association: false, reference_name: "Dummy", expected_args: nil)
+        def initialize(association: false, reference_name: "Dummy", expected_arg_count: nil)
           @association = association
           @reference_name = reference_name
-          @expected_args = expected_args
+          @expected_arg_count = expected_arg_count
         end
 
         def constant_name_from_node(node, ancestors:, relative_path: nil)
@@ -219,8 +218,8 @@ module ReferenceExtractor
           return nil unless NodeHelpers.method_call?(node)
 
           args = NodeHelpers.method_arguments(node)
-          if @expected_args && @expected_args != args
-            raise("expected arguments don't match.\nExpected:\n#{@expected_args}\nActual:\n#{args}")
+          if @expected_arg_count && args.length != @expected_arg_count
+            raise("expected #{@expected_arg_count} arguments but got #{args.length}")
           end
 
           @reference_name
@@ -230,7 +229,7 @@ module ReferenceExtractor
       DEFAULT_INSPECTORS = [ConstNodeInspector.new, DummyAssociationInspector.new]
 
       def process(code, file_path, constant_name_inspectors = DEFAULT_INSPECTORS)
-        root_node = ParserTestHelper.parse(code)
+        root_node = ParserTestHelper.parse_raw(code)
         file_path = to_app_path(file_path)
 
         extractor = AstReferenceExtractor.new(

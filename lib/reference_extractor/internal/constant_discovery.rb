@@ -32,7 +32,7 @@ module ReferenceExtractor
 
         return unless location
 
-        relative_location = Pathname.new(location).relative_path_from(@root_path)
+        relative_location = relative_location_for(location)
         ConstantContext.new(const_name, relative_location)
       end
 
@@ -46,6 +46,11 @@ module ReferenceExtractor
       end
 
       private
+
+      def relative_location_for(location)
+        @relative_location_cache ||= {}
+        @relative_location_cache[location] ||= Pathname.new(location).relative_path_from(@root_path)
+      end
 
       def const_locations
         return @const_locations unless @const_locations.nil?

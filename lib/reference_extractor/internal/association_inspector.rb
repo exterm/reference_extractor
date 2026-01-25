@@ -28,8 +28,8 @@ module ReferenceExtractor
 
       def constant_name_from_node(node, ancestors:, relative_path:)
         return unless NodeHelpers.method_call?(node)
-        return if excluded?(relative_path)
         return unless association?(node)
+        return if excluded?(relative_path)
 
         arguments = NodeHelpers.method_arguments(node)
         association_name = association_name(arguments)

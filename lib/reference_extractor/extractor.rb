@@ -40,7 +40,7 @@ module ReferenceExtractor
       ast = parse_file(absolute_path)
       return [] unless ast
 
-      relative_path = Pathname.new(absolute_path).relative_path_from(root_path)
+      relative_path = absolute_path.relative_path_from(root_path)
       extract_references(ast, relative_path:)
     end
 

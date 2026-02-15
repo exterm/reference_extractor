@@ -2,7 +2,7 @@
 
 ## Introduction
 
-ReferenceExtractor parses Ruby files and returns the constants they reference, using your Zeitwerk autoloaders to resolve what lives where. It gives you a graph you can use for architecture rules like layering or dependency checks.
+ReferenceExtractor parses Ruby files and returns the constants they reference, using your Zeitwerk autoloaders to resolve what lives where. It gives you a graph of dependencies you can use to analyze the structure of your codebase.
 
 ReferenceExtractor is in _prototype_ stage. It works in general but is not battle tested.
 

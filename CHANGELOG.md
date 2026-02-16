@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Better error message for ambiguous constants
+
 ## [0.1.1] - 2026-01-24
 
 - added association inspector from Packwerk

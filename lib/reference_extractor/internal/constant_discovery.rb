@@ -94,14 +94,21 @@ module ReferenceExtractor
         raise(Error, "Could not find any ruby files.") if all_cpaths.empty?
 
         is_ambiguous = all_cpaths.size != paths_by_constant.size
-        raise(Error, ambiguous_constants_hint(paths_by_constant, all_cpaths: all_cpaths)) if is_ambiguous
+        raise(Error, ambiguous_constants_hint(all_cpaths: all_cpaths)) if is_ambiguous
       end
 
-      def ambiguous_constants_hint(paths_by_constant, all_cpaths:)
-        ambiguous_constants = all_cpaths.except(*paths_by_constant.invert.keys).values
+      def ambiguous_constants_hint(all_cpaths:)
+        paths_by_constant = all_cpaths.each_with_object({}) do |(path, constant), grouped|
+          grouped[constant] ||= []
+          grouped[constant] << path
+        end
+        ambiguous_constants = paths_by_constant.select { |_constant, paths| paths.size > 1 }
+
         <<~MSG
           Ambiguous constant definition:
-          #{ambiguous_constants.map { |const| " - #{const}" }.join("\n")}
+          #{ambiguous_constants.map do |constant, paths|
+              " - #{constant}:\n#{paths.map { |path| "   - #{relative_location_for(path)}" }.join("\n")}"
+            end.join("\n")}
         MSG
       end
     end
